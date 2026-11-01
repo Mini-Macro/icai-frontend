@@ -1,0 +1,2668 @@
+/* Design tokens */
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.995 0.003 240);
+  --foreground: oklch(0.18 0.05 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.05 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.05 250);
+  --primary: oklch(0.36 0.13 255);
+  --primary-foreground: oklch(0.99 0.005 240);
+  --secondary: oklch(0.50 0.16 145);
+  --secondary-foreground: oklch(0.99 0.005 240);
+  --muted: oklch(0.96 0.01 240);
+  --muted-foreground: oklch(0.45 0.04 250);
+  --accent: oklch(0.85 0.16 90);
+  --accent-foreground: oklch(0.2 0.05 250);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(0.929 0.013 255.508);
+  --input: oklch(0.929 0.013 255.508);
+  --ring: oklch(0.704 0.04 256.788);
+  --primary-darker: oklch(0.3 0.13 255);
+  --primary-tealish: oklch(0.4 0.14 200);
+  --secondary-darker: oklch(0.40 0.17 145);
+}
+
+* { box-sizing: border-box; }
+
+/* Root font-size scales with viewport so every rem-based size (headings,
+   padding, gaps, button heights) shrinks proportionally on phones. This is
+   the load-bearing piece of the mobile-responsive design — keep it.
+   Scale is intentionally gentle so .875rem body copy stays ≥12px even on
+   the smallest screens, while big inline headings shrink visibly. */
+html {
+  font-size: 16px;
+}
+@media (max-width: 900px) {
+  html { font-size: 15.5px; }
+}
+@media (max-width: 768px) {
+  html { font-size: 15px; }
+}
+@media (max-width: 640px) {
+  html { font-size: 14.5px; }
+}
+@media (max-width: 480px) {
+  html { font-size: 14px; }
+}
+@media (max-width: 380px) {
+  html { font-size: 13.5px; }
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent iOS zoom-on-focus from inflating form fields */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Block horizontal scroll caused by any rogue full-width element on mobile.
+   Why `clip` and not `hidden`: `overflow-x: hidden` turns html/body into a
+   scroll container for descendants, which breaks `position: sticky` on the
+   admin sidebar (it sticks to body, not the viewport). `clip` blocks overflow
+   without establishing a scroll container, preserving sticky behavior. */
+html, body { overflow-x: clip; }
+
+/* Media defaults — keep images/videos from blowing out narrow viewports */
+img, video, svg { max-width: 100%; height: auto; }
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: 0; background: transparent; color: inherit; }
+input, select, textarea { font-family: inherit; }
+
+/* Utility classes */
+.container { max-width: 80rem; margin-inline: auto; padding-inline: 1rem; }
+.row { display: flex; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.gap-1 { gap: .25rem; } .gap-2 { gap: .5rem; } .gap-3 { gap: .75rem; } .gap-4 { gap: 1rem; }
+.gap-5 { gap: 1.25rem; } .gap-6 { gap: 1.5rem; } .gap-8 { gap: 2rem; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .625rem 1.125rem; border-radius: .375rem;
+  font-size: .875rem; font-weight: 600; line-height: 1; cursor: pointer;
+  transition: all .15s ease;
+  border: 1px solid transparent;
+}
+.btn-primary { background: var(--primary); color: var(--primary-foreground); }
+.btn-primary:hover { background: oklch(0.32 0.13 255); }
+.btn-accent { background: var(--accent); color: var(--accent-foreground); }
+.btn-accent:hover { filter: brightness(0.96); }
+.btn-outline { background: var(--card); color: var(--foreground); border-color: var(--border); }
+.btn-outline:hover { border-color: oklch(0.36 0.13 255 / 0.4); color: var(--primary); }
+.btn-ghost-light { background: rgba(255,255,255,.1); color: white; border-color: rgba(255,255,255,.3); backdrop-filter: blur(8px); }
+.btn-ghost-light:hover { background: rgba(255,255,255,.2); }
+
+/* Outlined destructive — pairs with .btn-primary for confirm/reject UI.
+   Same base padding as .btn so they line up visually. */
+.btn-outline-danger {
+  background: var(--card);
+  color: var(--destructive, #b91c1c);
+  border-color: color-mix(in srgb, var(--destructive, #b91c1c) 35%, transparent);
+}
+.btn-outline-danger:hover {
+  background: color-mix(in srgb, var(--destructive, #b91c1c) 8%, var(--card));
+  border-color: var(--destructive, #b91c1c);
+}
+
+/* Solid success — the green "Approve" pair partner for multi-stage and
+   any explicit-affirmation actions. */
+.btn-success {
+  background: #16a34a;
+  color: white;
+  border-color: #16a34a;
+}
+.btn-success:hover { background: #15803d; }
+
+/* ── Loading state for any .btn ─────────────────────────────────────────
+   Two activation paths:
+     1. The <Button> component sets data-loading + .btn-loading
+     2. Any caller can opt in via data-loading="true" on a native <button>
+   The button is fully blocked from interaction while loading; pointer
+   becomes "wait" so users see something is in flight.                  */
+.btn[disabled],
+.btn[data-loading="true"] {
+  cursor: not-allowed;
+  opacity: .85;
+}
+.btn[data-loading="true"] {
+  cursor: wait;
+  pointer-events: none;
+}
+.btn-loading .btn-label { opacity: .8; }
+.btn-loading-overlay .btn-label { visibility: hidden; }
+.btn-spinner-overlay {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-loading-overlay { position: relative; }
+.btn-spinner {
+  display: inline-block;
+  width: .85em;
+  height: .85em;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin .65s linear infinite;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .btn-spinner { animation: btn-spin 1.6s linear infinite; }
+}
+
+/* WCAG 2.4.7 Focus Visible — keyboard focus must be perceivable. Mouse
+   clicks suppress the ring via :focus-visible (browser-managed). */
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: .25rem;
+}
+
+/* WCAG 2.4.1 Skip Link — first focusable element. Visually hidden until
+   it receives keyboard focus, at which point it animates into view above
+   all content. Pairs with id="main-content" on the page main element. */
+.skip-link {
+  position: fixed;
+  top: -3rem;
+  left: 1rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: .5rem 1rem;
+  border-radius: .25rem;
+  font-weight: 600;
+  z-index: 9999;
+  transition: top .15s ease;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 1rem;
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.input-base {
+  width: 100%;
+  padding: .625rem .75rem;
+  border-radius: .375rem;
+  border: 1px solid var(--border);
+  background: var(--background);
+  font-size: .875rem;
+  color: var(--foreground);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.input-base:focus { border-color: var(--primary); box-shadow: 0 0 0 3px oklch(0.36 0.13 255 / 0.1); }
+.input-base::placeholder { color: var(--muted-foreground); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  padding: 1.5rem;
+}
+
+.muted-text { color: var(--muted-foreground); }
+.tiny-eyebrow { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--secondary); }
+
+.hover-lift { transition: transform .15s ease, border-color .15s, box-shadow .15s; }
+.hover-lift:hover { transform: translateY(-2px); border-color: oklch(0.36 0.13 255 / 0.4); box-shadow: 0 10px 25px -10px oklch(0.18 0.05 250 / 0.15); }
+
+/* Polished hover for home-page feature cards (Services, Knowledge Hub) */
+.feature-card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform .28s cubic-bezier(.2,.7,.2,1),
+    box-shadow .28s cubic-bezier(.2,.7,.2,1),
+    border-color .28s ease;
+  will-change: transform;
+}
+.feature-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--primary);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .35s cubic-bezier(.2,.7,.2,1);
+}
+.feature-card:hover {
+  transform: translateY(-5px);
+  border-color: oklch(0.36 0.13 255 / 0.45);
+  box-shadow: 0 22px 40px -18px oklch(0.36 0.13 255 / 0.35);
+}
+.feature-card:hover::before { transform: scaleX(1); }
+.feature-card:active { transform: translateY(-2px); }
+
+.feature-card .icon-tile {
+  transition: transform .28s cubic-bezier(.2,.7,.2,1), background .28s ease, color .28s ease;
+}
+.feature-card:hover .icon-tile {
+  transform: scale(1.08) rotate(-3deg);
+  background: var(--primary);
+  color: #fff;
+}
+/* if a green icon tile is ever used here, keep the hover fill the lightest green */
+.feature-card:hover .icon-tile.green {
+  background: oklch(0.92 0.06 150);
+  color: var(--secondary);
+}
+
+.feature-card h3 { transition: color .28s ease; }
+.feature-card:hover h3 { color: var(--primary); }
+
+.feature-cta { transition: gap .28s cubic-bezier(.2,.7,.2,1); }
+.feature-cta .icon { transition: transform .28s cubic-bezier(.2,.7,.2,1); }
+.feature-card:hover .feature-cta { gap: .55rem; }
+.feature-card:hover .feature-cta .icon { transform: translateX(3px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .feature-card,
+  .feature-card::before,
+  .feature-card .icon-tile,
+  .feature-card h3,
+  .feature-cta,
+  .feature-cta .icon {
+    transition: none;
+  }
+  .feature-card:hover { transform: none; }
+  .feature-card:hover::before { transform: scaleX(1); }
+}
+
+/* Committee category card — used on Home page and Events page (identical) */
+.cat-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  text-align: left;
+  padding: 1.375rem 1.25rem 1.125rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  color: inherit;
+  cursor: pointer;
+  width: 100%;
+  min-height: 11rem;
+  transition:
+    transform .28s cubic-bezier(.2,.7,.2,1),
+    box-shadow .28s cubic-bezier(.2,.7,.2,1),
+    border-color .28s ease;
+  will-change: transform;
+}
+.cat-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--cat-accent);
+  box-shadow: 0 22px 40px -18px color-mix(in oklab, var(--cat-accent) 55%, transparent);
+}
+.cat-card:active { transform: translateY(-2px); }
+.cat-card:focus-visible {
+  outline: 2px solid var(--cat-accent);
+  outline-offset: 2px;
+}
+
+/* accent bar that wipes in across the top */
+.cat-card-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--cat-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .35s cubic-bezier(.2,.7,.2,1);
+}
+.cat-card:hover .cat-card-bar { transform: scaleX(1); }
+
+.cat-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .5rem;
+}
+.cat-card-short {
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--cat-accent);
+  padding: .15rem .45rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--cat-accent) 12%, transparent);
+  transition: background .28s ease, color .28s ease;
+}
+.cat-card:hover .cat-card-short {
+  background: var(--cat-accent);
+  color: #fff;
+}
+.cat-card-count {
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--muted-foreground);
+}
+.cat-card-title {
+  margin-top: .25rem;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--foreground);
+  transition: color .28s ease;
+}
+.cat-card:hover .cat-card-title { color: var(--cat-accent); }
+.cat-card-next {
+  flex: 1;
+  font-size: .8125rem;
+  color: var(--muted-foreground);
+}
+.cat-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  color: var(--primary);
+  font-size: .875rem;
+  font-weight: 700;
+  transition: color .28s ease, gap .28s cubic-bezier(.2,.7,.2,1);
+}
+.cat-card:hover .cat-card-cta {
+  color: var(--cat-accent);
+  gap: .6rem;
+}
+.cat-card-cta svg {
+  transition: transform .28s cubic-bezier(.2,.7,.2,1);
+}
+.cat-card:hover .cat-card-cta svg { transform: translateX(3px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-card,
+  .cat-card-bar,
+  .cat-card-short,
+  .cat-card-title,
+  .cat-card-cta,
+  .cat-card-cta svg {
+    transition: none;
+  }
+  .cat-card:hover { transform: none; }
+  .cat-card:hover .cat-card-bar { transform: scaleX(1); }
+}
+
+/* Upcoming event — collapsible accordion row */
+.event-acc {
+  border-radius: .75rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  overflow: hidden;
+  transition: border-color .2s ease, box-shadow .25s ease;
+}
+.event-acc + .event-acc { margin-top: .625rem; }
+.event-acc:hover { border-color: oklch(0.36 0.13 255 / 0.35); }
+.event-acc.is-open {
+  border-color: oklch(0.36 0.13 255 / 0.5);
+  box-shadow: 0 14px 30px -16px oklch(0.18 0.05 250 / 0.28);
+}
+
+.event-acc-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.05rem 1.25rem;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+}
+.event-acc-titleblock { flex: 1; min-width: 0; }
+.event-acc-title {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--foreground);
+}
+.event-acc-committee {
+  margin-top: .2rem;
+  font-size: .8125rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.event-acc-right {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  flex-shrink: 0;
+}
+.event-acc-date {
+  font-size: .9375rem;
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+}
+.event-acc-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  transition: transform .3s cubic-bezier(.2,.7,.2,1), background .25s ease, color .25s ease;
+}
+.event-acc-head:hover .event-acc-chevron {
+  background: oklch(0.36 0.13 255 / 0.12);
+  color: var(--primary);
+}
+.event-acc.is-open .event-acc-chevron {
+  transform: rotate(180deg);
+  background: var(--primary);
+  color: #fff;
+}
+
+/* collapsible panel — animates via grid-template-rows */
+.event-acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .32s cubic-bezier(.2,.7,.2,1);
+}
+.event-acc.is-open .event-acc-panel { grid-template-rows: 1fr; }
+.event-acc-panel-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+.event-acc-meta {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .6rem 1.5rem;
+  margin: 0 1.25rem;
+  padding: .95rem 0;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: .8125rem;
+}
+@media (min-width: 640px) {
+  .event-acc-meta { grid-template-columns: 1.2fr 1.4fr auto; align-items: center; }
+}
+.event-acc-mode {
+  justify-self: start;
+  padding: .15rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  background: oklch(0.55 0.14 155 / 0.12);
+  color: var(--secondary);
+}
+.event-acc-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin: 0 1.25rem 1.05rem;
+  color: var(--primary);
+  font-size: .8125rem;
+  font-weight: 700;
+  transition: gap .25s cubic-bezier(.2,.7,.2,1);
+}
+.event-acc-cta:hover { gap: .6rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .event-acc,
+  .event-acc-panel,
+  .event-acc-chevron,
+  .event-acc-cta {
+    transition: none;
+  }
+}
+
+/* Rich detail panel (committee detail page) */
+.event-acc-detail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  padding: 1.15rem 1.25rem 1.35rem;
+  border-top: 1px solid var(--border);
+}
+@media (min-width: 720px) {
+  .event-acc-detail { grid-template-columns: 250px 1fr; }
+}
+.event-acc-img {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  background: var(--muted, #f1f5f9);
+  border-radius: .625rem;
+  display: block;
+}
+.event-acc-detail-body { min-width: 0; }
+.event-acc-highlights {
+  list-style: none;
+  margin: .55rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.event-acc-highlights li {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  font-size: .875rem;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+.event-acc-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  margin-top: .1rem;
+  border-radius: 999px;
+  background: oklch(0.55 0.14 155 / 0.15);
+  color: var(--secondary);
+}
+.event-acc-detail .event-acc-meta {
+  margin: .95rem 0 0;
+  padding: .95rem 0 0;
+}
+.event-acc-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.event-acc-speaker {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+}
+.event-acc-speaker img {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.event-acc-speaker-name { font-size: .875rem; font-weight: 700; }
+.event-acc-speaker-role {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.event-acc-actions {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+}
+
+/* Committee profile — single unified card holding About body,
+   Leadership trio, and optional Chairman message stacked vertically.
+   Each subsection is padded on the shared surface with a thin divider
+   between them (no per-subsection card chrome). */
+.committee-profile {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cat-accent);
+  border-radius: .9rem;
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+.committee-profile-block {
+  padding: 1.5rem 1.75rem;
+}
+.committee-profile-block + .committee-profile-block {
+  border-top: 1px solid var(--border);
+}
+.committee-profile-eyebrow {
+  color: var(--cat-accent);
+  margin-bottom: .85rem;
+}
+.committee-profile-chairman {
+  background: color-mix(in srgb, var(--cat-accent) 4%, transparent);
+}
+
+.committee-about-body {
+  font-size: .9375rem;
+  line-height: 1.7;
+  color: var(--foreground);
+}
+.committee-about-body > *:first-child { margin-top: 0; }
+.committee-about-body > *:last-child { margin-bottom: 0; }
+.committee-about-body p {
+  margin: 0 0 .9rem;
+  color: var(--muted-foreground);
+}
+.committee-about-body p:last-child { margin-bottom: 0; }
+.committee-about-body strong { color: var(--foreground); }
+/* Leadership tiles — 3-across on wide, wraps naturally as viewport
+   narrows, single-column on phones. Vertical stack: photo → role badge
+   → name so the badge sits directly under the portrait. */
+.committee-leadership-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.committee-role-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: .5rem;
+  padding: 1.25rem 1rem;
+  background: var(--muted, #f5f5f4);
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.committee-role-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .06);
+  border-color: var(--cat-accent);
+}
+.committee-role-photo-wrap {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, var(--cat-accent), color-mix(in srgb, var(--cat-accent) 55%, white));
+  margin-bottom: .3rem;
+}
+.committee-role-photo {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  background: var(--card);
+}
+.committee-role-photo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--cat-accent);
+  letter-spacing: -.02em;
+  background: var(--card);
+}
+.committee-role-badge {
+  display: inline-block;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--cat-accent);
+  padding: .18rem .55rem;
+  border-radius: 999px;
+  width: fit-content;
+}
+.committee-role-name {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--foreground);
+  line-height: 1.25;
+}
+
+@media (max-width: 640px) {
+  .committee-profile-block { padding: 1.125rem 1rem; }
+  .committee-role-photo-wrap { width: 72px; height: 72px; }
+}
+
+/* Footer top links bar — hover highlight */
+.footer-toplink {
+  transition: color .15s ease, opacity .15s ease, text-shadow .15s ease;
+}
+.footer-toplink:hover {
+  color: #fff !important;
+  opacity: 1 !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, .45);
+}
+
+/* Room booking page */
+.room-booking-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+@media (min-width: 920px) {
+  .room-booking-grid { grid-template-columns: 1fr 340px; }
+}
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: .85rem;
+}
+.room-card {
+  text-align: left;
+  padding: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  background: var(--card);
+  cursor: pointer;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.room-card:hover { border-color: oklch(0.36 0.13 255 / 0.4); transform: translateY(-2px); }
+.room-card.is-active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px oklch(0.36 0.13 255 / 0.12);
+}
+.room-card-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  flex-shrink: 0;
+}
+.room-amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: .75rem;
+}
+.room-amenity {
+  font-size: .6875rem;
+  font-weight: 600;
+  padding: .15rem .45rem;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.date-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .1rem;
+  min-width: 4rem;
+  padding: .6rem .5rem;
+  border: 1px solid var(--border);
+  border-radius: .65rem;
+  background: var(--card);
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease, color .2s ease;
+}
+.date-chip:hover { border-color: oklch(0.36 0.13 255 / 0.4); }
+.date-chip.is-active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+.avail-dot {
+  width: .55rem;
+  height: .55rem;
+  border-radius: 999px;
+  display: inline-block;
+}
+.avail-free { background: var(--secondary); }
+.avail-booked { background: oklch(0.72 0.02 250); }
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: .75rem;
+}
+.slot-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .2rem;
+  padding: .85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: .65rem;
+  background: var(--card);
+  cursor: pointer;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.slot-chip:not(.is-booked):hover { border-color: var(--primary); transform: translateY(-2px); }
+.slot-chip.is-active {
+  border-color: var(--primary);
+  background: oklch(0.36 0.13 255 / 0.07);
+  box-shadow: 0 0 0 3px oklch(0.36 0.13 255 / 0.12);
+}
+.slot-chip.is-booked {
+  opacity: .6;
+  cursor: not-allowed;
+  background: var(--muted);
+}
+.slot-chip .icon { color: var(--secondary); }
+.slot-chip.is-booked .icon { color: var(--muted-foreground); }
+.booking-summary {
+  position: sticky;
+  top: 90px;
+}
+.booking-success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: oklch(0.55 0.14 155 / 0.15);
+  color: var(--secondary);
+}
+
+/* WICASA student-wing card */
+.wicasa-card {
+  background: oklch(0.94 0.05 145 / 0.55);
+  border-color: oklch(0.78 0.12 145 / 0.4);
+  display: flex;
+  flex-direction: column;
+}
+.wicasa-subhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-top: 1.6rem;
+  margin-bottom: .85rem;
+  padding-bottom: .45rem;
+  border-bottom: 1px solid oklch(0.78 0.12 145 / 0.35);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+.wicasa-signin-hint {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted-foreground);
+}
+.wicasa-updates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+.wicasa-updates li {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  font-size: .875rem;
+  line-height: 1.45;
+}
+.wicasa-new {
+  flex-shrink: 0;
+  margin-top: .08rem;
+  font-size: .625rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  padding: .14rem .42rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.wicasa-suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  flex: 1;
+}
+.wicasa-suggestions li {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .65rem .65rem .65rem .9rem;
+  background: var(--card);
+  border: 1px solid oklch(0.78 0.12 145 / 0.35);
+  border-radius: .7rem;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.wicasa-suggestions li:hover {
+  border-color: oklch(0.55 0.16 145 / 0.55);
+  box-shadow: 0 6px 18px -10px rgba(31, 122, 73, .35);
+  transform: translateY(-1px);
+}
+.wicasa-sugg-text {
+  flex: 1;
+  font-size: .8125rem;
+  line-height: 1.4;
+}
+/* Reddit-style upvote pill */
+.wicasa-upvote-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .35rem .7rem .35rem .55rem;
+  border-radius: 999px;
+  border: none;
+  background: #EAEDEF;       /* Reddit's neutral pill bg */
+  color: #1A1A1B;            /* Reddit's near-black text */
+  cursor: pointer;
+  font-size: .8125rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: background .12s ease, color .12s ease;
+}
+.wicasa-upvote-pill:hover {
+  background: #DAE0E6;       /* Reddit hover gray */
+}
+.wicasa-upvote-pill:hover .wicasa-upvote-arrow {
+  color: #FF4500;            /* Reddit orange on hover */
+}
+.wicasa-upvote-pill:active { background: #CFD9DE; }
+
+.wicasa-upvote-pill.is-active {
+  background: #FF4500;       /* Reddit orange */
+  color: #FFFFFF;
+}
+.wicasa-upvote-pill.is-active:hover {
+  background: #E03D00;
+  color: #FFFFFF;
+}
+.wicasa-upvote-pill.is-active .wicasa-upvote-arrow,
+.wicasa-upvote-pill.is-active:hover .wicasa-upvote-arrow {
+  color: #FFFFFF;
+}
+
+.wicasa-upvote-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  color: #878A8C;            /* Reddit muted gray arrow when idle */
+  transform: rotate(180deg);
+  transition: color .12s ease;
+}
+
+.wicasa-upvote-count {
+  font-variant-numeric: tabular-nums;
+  min-width: 1.5ch;
+  text-align: center;
+}
+.wicasa-resources {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin-top: 1.6rem;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: .8125rem;
+  letter-spacing: .05em;
+  transition: gap .2s ease;
+}
+.wicasa-resources:hover { gap: .6rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wicasa-suggestions li,
+  .wicasa-upvote-pill,
+  .wicasa-upvote-arrow,
+  .wicasa-resources {
+    transition: none;
+  }
+}
+
+.icon-tile {
+  width: 2.75rem; height: 2.75rem; border-radius: .5rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: oklch(0.36 0.13 255 / 0.1); color: var(--primary);
+}
+.icon-tile.green { background: oklch(0.55 0.14 155 / 0.1); color: var(--secondary); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: .25rem;
+  padding: .125rem .5rem; border-radius: .25rem;
+  font-size: .75rem; font-weight: 600;
+}
+.badge-secondary { background: oklch(0.55 0.14 155 / 0.1); color: var(--secondary); }
+.badge-accent { background: var(--accent); color: var(--accent-foreground); }
+.badge-primary { background: var(--primary); color: var(--primary-foreground); }
+
+.divider-top { border-top: 1px solid var(--border); }
+
+/* ── Announcement ticker ────────────────────────────────────────────────
+   Industry-standard marquee. Slow, continuous; pauses on hover, focus,
+   or when the user tabs into one of the items so a click is achievable;
+   honours prefers-reduced-motion by stopping motion entirely.
+
+   The track contains the announcement list duplicated twice. The animation
+   translates by -50% (one full copy of the list), then the keyframe loops
+   so the second copy slides in to replace the first — seamless from the
+   user's POV. */
+.ticker-bar {
+  border-top: 1px solid oklch(0.78 0.13 90 / 0.6);
+  border-bottom: 1px solid oklch(0.78 0.13 90 / 0.6);
+  background: oklch(0.92 0.09 90 / 0.55);
+}
+.ticker-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .375rem 1rem;
+  font-size: .875rem;
+}
+.ticker-label {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: .15rem .55rem;
+  border-radius: .375rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ticker-label:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.ticker-viewport {
+  flex: 1 1 auto;
+  overflow: hidden;
+  min-width: 0;
+  /* Soft fade on both edges so items appear to come in / out instead of
+     pop at the container boundary. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+.ticker-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5rem;
+  white-space: nowrap;
+  /* 90s is the industry-standard sweet spot for branch news tickers —
+     readable, not boring. (The legacy 35s was too aggressive.) */
+  animation: ticker-scroll 90s linear infinite;
+  /* Hint to the browser this is a long-running transform animation so
+     it's hardware-accelerated. */
+  will-change: transform;
+}
+/* Pause animation when the user hovers the bar, focuses any item with
+   the keyboard, or hovers the View-all link. */
+.ticker-bar:hover .ticker-track,
+.ticker-bar:focus-within .ticker-track {
+  animation-play-state: paused;
+}
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  color: rgba(0, 0, 0, .78);
+  text-decoration: none;
+  font-weight: 500;
+  padding: .15rem .25rem;
+  border-radius: .25rem;
+  transition: color .15s ease, background .15s ease;
+}
+.ticker-item:hover,
+.ticker-item:focus-visible {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  outline: none;
+}
+.ticker-item:focus-visible {
+  /* Subtle focus ring for keyboard users only — no background fill. */
+  box-shadow: 0 0 0 2px oklch(0.36 0.13 255 / 0.35);
+  border-radius: .25rem;
+}
+.ticker-dot {
+  color: var(--primary);
+  font-weight: 700;
+}
+.ticker-title { white-space: nowrap; }
+.ticker-pdf {
+  font-size: .625rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: .05rem .3rem;
+  border-radius: .2rem;
+  background: oklch(0.95 0.04 25);
+  color: oklch(0.45 0.18 25);
+  margin-left: .15rem;
+}
+.ticker-viewall {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  font-weight: 600;
+  font-size: .8125rem;
+  color: var(--primary);
+  text-decoration: none;
+  padding: .15rem .35rem;
+  border-radius: .25rem;
+  white-space: nowrap;
+}
+.ticker-viewall:hover,
+.ticker-viewall:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+/* Accessibility: stop the marquee entirely for users who've asked for
+   reduced motion. The list is still navigable via Tab. */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}
+@media (max-width: 640px) {
+  .ticker-viewall { display: none; }
+  .ticker-row { gap: .5rem; padding: .375rem .75rem; }
+}
+
+/* Icons */
+.icon { width: 1rem; height: 1rem; stroke-width: 2; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.icon-sm { width: .875rem; height: .875rem; }
+.icon-lg { width: 1.25rem; height: 1.25rem; }
+.icon-xl { width: 1.75rem; height: 1.75rem; }
+
+/* Auth page */
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  background: var(--background);
+  align-items: stretch;
+}
+/* Pin the marketing panel to the viewport so its content never moves as
+ * the right-hand form grows or shrinks (e.g. the MRN field appearing
+ * when Member is selected). `sticky top:0 h:100vh` keeps it visually
+ * fixed while still respecting the two-column grid on scroll. */
+.auth-side {
+  background:
+    radial-gradient(circle at 80% 20%, oklch(0.4 0.14 200 / 0.55), transparent 55%),
+    radial-gradient(circle at 20% 80%, oklch(0.55 0.14 155 / 0.5), transparent 50%),
+    linear-gradient(135deg, var(--primary), var(--primary-darker) 60%, var(--primary-tealish));
+  color: var(--primary-foreground);
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  overflow: hidden;
+}
+.auth-side::before {
+  content: ""; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at center, black 25%, transparent 75%);
+  pointer-events: none;
+}
+/* Decorative glow behind the headline — anchored to the panel so it
+ * stays put even if the parent height shifts. */
+.auth-side::after {
+  content: "";
+  position: absolute;
+  right: -6rem; bottom: -6rem;
+  width: 22rem; height: 22rem;
+  background: radial-gradient(circle, oklch(0.7 0.16 90 / 0.18), transparent 65%);
+  pointer-events: none;
+}
+.auth-side-body {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;      /* Push the headline block toward the bottom of the panel */
+  max-width: 32rem;
+}
+/* Mobile: collapse the auth grid to a single column and hide the
+ * marketing panel. This override MUST come after the base .auth-side
+ * rule above — both selectors have identical specificity, so cascade
+ * order decides, and earlier `@media { .auth-side { display:none } }`
+ * was being clobbered by the base `display: flex`. */
+@media (max-width: 900px) {
+  .auth-shell { grid-template-columns: 1fr; }
+  .auth-side { display: none; }
+}
+.auth-form-wrap {
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 2.5rem 2rem;
+  min-height: 100vh;
+}
+.auth-card {
+  width: 100%;
+  max-width: 26rem;
+  margin: auto 0;         /* Vertically centre within the viewport */
+}
+.auth-tabs {
+  display: grid; grid-template-columns: 1fr 1fr;
+  background: var(--muted);
+  border-radius: .625rem;
+  padding: .25rem;
+  margin-bottom: 1.5rem;
+  gap: .15rem;
+}
+.auth-tab {
+  padding: .55rem; border-radius: .5rem; font-size: .875rem; font-weight: 600;
+  color: var(--muted-foreground);
+  transition: all .15s;
+  text-align: center;
+  cursor: pointer;
+}
+.auth-tab:hover { color: var(--foreground); }
+.auth-tab.active {
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: 0 1px 3px oklch(0.18 0.05 250 / 0.08);
+}
+/* Role picker — one row of pills that always fits. Three self-signup
+ * roles today (CA Member / Student / Employer); if we ever add a fourth,
+ * increase the grid to 4 columns with a media query fallback. */
+.role-pills {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: .5rem;
+  margin-bottom: 1.25rem;
+}
+/* Below 520px the three icon+label pills collide with each other; stack
+ * them vertically so each pill has enough room for its label. */
+@media (max-width: 520px) {
+  .role-pills { grid-template-columns: 1fr; gap: .4rem; }
+}
+.role-pill {
+  padding: .7rem .5rem;
+  border-radius: .55rem;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  transition: all .15s;
+  cursor: pointer;
+  min-height: 44px;
+}
+.role-pill:hover { border-color: oklch(0.6 0.05 250); }
+.role-pill.active {
+  border-color: var(--primary);
+  background: oklch(0.36 0.13 255 / 0.08);
+  color: var(--primary);
+  box-shadow: 0 0 0 3px oklch(0.36 0.13 255 / 0.10);
+}
+.role-pill.active svg { color: var(--primary); }
+.field-label {
+  display: block;
+  font-size: .8125rem; font-weight: 500; color: var(--foreground);
+  margin-bottom: .375rem;
+}
+
+.otp-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: .5rem; }
+.otp-cell {
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding: .75rem 0;
+  letter-spacing: .05em;
+}
+
+.alert {
+  padding: .75rem .875rem;
+  border-radius: .5rem;
+  font-size: .8125rem;
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+}
+.alert-info { background: oklch(0.36 0.13 255 / 0.08); color: var(--primary); border: 1px solid oklch(0.36 0.13 255 / 0.2); }
+.alert-error { background: oklch(0.577 0.245 27.325 / 0.08); color: var(--destructive); border: 1px solid oklch(0.577 0.245 27.325 / 0.2); }
+.alert-success { background: oklch(0.55 0.14 155 / 0.08); color: var(--secondary); border: 1px solid oklch(0.55 0.14 155 / 0.2); }
+
+/* Legacy single-toast (still used by AuthContext until migration is complete) */
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: .5rem; padding: .875rem 1rem;
+  display: flex; align-items: center; gap: .5rem;
+  box-shadow: 0 10px 25px -5px oklch(0.18 0.05 250 / 0.2);
+  font-size: .875rem;
+  z-index: 100;
+  animation: slideIn .25s ease;
+}
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ── Top-right toast stack ─────────────────────────────────────────────
+   Anchored to the top-right of the viewport. Stacks vertically with a
+   small gap and slides in from the right; tapped/swiped or auto-dismissed
+   after the configured duration. */
+.toast-stack {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .625rem;
+  z-index: 1000;
+  pointer-events: none;
+  max-width: min(26rem, calc(100vw - 2rem));
+}
+.toast-item {
+  pointer-events: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--muted-foreground);
+  border-radius: .5rem;
+  padding: .75rem .875rem;
+  display: flex;
+  align-items: flex-start;
+  gap: .625rem;
+  box-shadow: 0 12px 28px -10px oklch(0.18 0.05 250 / 0.28), 0 2px 4px -2px oklch(0.18 0.05 250 / 0.08);
+  font-size: .875rem;
+  animation: toastIn .22s cubic-bezier(.2,.7,.2,1);
+  min-width: 16rem;
+}
+.toast-item.toast-leaving { animation: toastOut .2s ease forwards; }
+.toast-success { border-left-color: var(--secondary); }
+.toast-error   { border-left-color: var(--destructive); }
+.toast-warning { border-left-color: oklch(0.78 0.16 75); }
+.toast-info    { border-left-color: var(--primary); }
+.toast-icon {
+  flex: 0 0 auto;
+  width: 1.125rem;
+  height: 1.125rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.toast-success .toast-icon { color: var(--secondary); }
+.toast-error   .toast-icon { color: var(--destructive); }
+.toast-warning .toast-icon { color: oklch(0.62 0.16 75); }
+.toast-info    .toast-icon { color: var(--primary); }
+.toast-body { flex: 1 1 auto; min-width: 0; }
+.toast-title {
+  font-weight: 600;
+  font-size: .8125rem;
+  margin-bottom: .125rem;
+  color: var(--foreground);
+}
+.toast-text {
+  color: var(--foreground);
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+.toast-close {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .25rem;
+  color: var(--muted-foreground);
+  transition: background .15s, color .15s;
+}
+.toast-close:hover { background: var(--muted); color: var(--foreground); }
+.toast-close:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+@keyframes toastIn {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes toastOut {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(110%); opacity: 0; }
+}
+@media (max-width: 640px) {
+  .toast-stack { top: .75rem; right: .75rem; left: .75rem; max-width: none; }
+  .toast-item { min-width: 0; }
+}
+
+/* ── Modal alert / confirm / prompt ───────────────────────────────────
+   Replaces native window.alert / .confirm / .prompt. Centred backdrop with
+   a card-style shell that matches the rest of the app. */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: oklch(0.18 0.05 250 / 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: dialogFadeIn .15s ease;
+}
+.dialog-shell {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  box-shadow: 0 25px 50px -12px oklch(0.18 0.05 250 / 0.35);
+  width: min(28rem, 100%);
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  animation: dialogPopIn .2s cubic-bezier(.2,.7,.2,1);
+}
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: 1.125rem 1.25rem .25rem;
+}
+.dialog-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.dialog-close {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .25rem;
+  color: var(--muted-foreground);
+  transition: background .15s, color .15s;
+}
+.dialog-close:hover { background: var(--muted); color: var(--foreground); }
+.dialog-close:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.dialog-body {
+  padding: .25rem 1.25rem 1rem;
+  overflow-y: auto;
+  font-size: .9375rem;
+  color: var(--foreground);
+  line-height: 1.5;
+}
+.dialog-text {
+  margin: .5rem 0;
+  white-space: pre-line;
+}
+.dialog-text:first-child { margin-top: 0; }
+.dialog-text:last-child { margin-bottom: 0; }
+.dialog-input { margin-top: .75rem; }
+.dialog-error {
+  margin-top: .5rem;
+  color: var(--destructive);
+  font-size: .8125rem;
+}
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+  padding: .875rem 1.25rem 1.125rem;
+  border-top: 1px solid var(--border);
+  background: oklch(0.985 0.005 240);
+  border-bottom-left-radius: .75rem;
+  border-bottom-right-radius: .75rem;
+}
+.btn-danger {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+}
+.btn-danger:hover { filter: brightness(0.92); }
+@keyframes dialogFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes dialogPopIn {
+  from { transform: translateY(8px) scale(.97); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog-overlay, .dialog-shell,
+  .toast-item, .toast-item.toast-leaving { animation: none; }
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: oklch(0.18 0.05 250 / 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  animation: fadeIn .15s ease;
+  /* Stops wheel/touch scroll from bubbling out of the backdrop onto the
+     underlying page when the user reaches the end of the modal content. */
+  overscroll-behavior: contain;
+}
+/* The direct child of .modal-backdrop is the dialog itself, which is the
+   actual scroll container (overflow-y: auto). The same overscroll guard
+   has to live on the scroll container, otherwise the chain still leaks
+   when wheel events originate inside the dialog body. */
+.modal-backdrop > * {
+  overscroll-behavior: contain;
+}
+/* Lock the page underneath while any modal is open. Uses :has() so every
+   modal across the app benefits without each one needing its own body
+   scroll-lock effect. */
+body:has(.modal-backdrop) {
+  overflow: hidden;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Avatar dropdown */
+.avatar-trigger {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .25rem .5rem .25rem .25rem;
+  border-radius: 999px;
+  background: var(--muted);
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.avatar-trigger:hover { background: oklch(0.93 0.02 255); }
+.avatar-circle {
+  width: 2rem; height: 2rem; border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-darker));
+  color: white;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700;
+}
+.avatar-menu {
+  position: absolute; right: 0; top: calc(100% + 8px);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: .5rem;
+  box-shadow: 0 10px 25px -5px oklch(0.18 0.05 250 / 0.2);
+  width: 14rem;
+  padding: .375rem;
+  z-index: 60;
+}
+.menu-item {
+  display: flex; align-items: center; gap: .5rem;
+  width: 100%;
+  padding: .5rem .625rem;
+  font-size: .8125rem;
+  border-radius: .25rem;
+  color: var(--foreground);
+}
+.menu-item:hover { background: var(--muted); }
+
+/* Dashboard */
+.stat-card {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: .75rem;
+  padding: 1.25rem;
+}
+.stat-num { font-size: 1.875rem; font-weight: 700; color: var(--foreground); line-height: 1.1; }
+.stat-label { font-size: .8125rem; color: var(--muted-foreground); margin-top: .25rem; }
+
+.progress-track { height: .5rem; background: var(--muted); border-radius: 999px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 999px; transition: width .3s; }
+
+/* Hero carousel */
+.hero-carousel {
+  position: relative;
+  width: 100%;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 18px 40px -18px rgba(11, 61, 145, .45);
+  background: var(--muted);
+  aspect-ratio: 3 / 2;
+}
+.hero-carousel-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform .55s cubic-bezier(.22, .61, .36, 1);
+}
+.hero-carousel-slide {
+  flex: 0 0 100%;
+  position: relative;
+  height: 100%;
+}
+.hero-carousel-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hero-carousel-caption {
+  position: absolute;
+  left: 1rem;
+  bottom: 3rem;
+  padding: .35rem .75rem;
+  background: rgba(11, 61, 145, .85);
+  color: white;
+  font-size: .8125rem;
+  font-weight: 600;
+  border-radius: .375rem;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.hero-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .9);
+  color: var(--primary);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, .35);
+  transition: background .15s, transform .15s;
+  z-index: 2;
+}
+.hero-carousel-arrow:hover { background: white; transform: translateY(-50%) scale(1.05); }
+.hero-carousel-arrow-prev { left: .75rem; }
+.hero-carousel-arrow-next { right: .75rem; }
+.hero-carousel-dots {
+  position: absolute;
+  left: 50%;
+  bottom: .75rem;
+  transform: translateX(-50%);
+  display: flex;
+  gap: .4rem;
+  z-index: 2;
+}
+.hero-carousel-dot {
+  width: .5rem;
+  height: .5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .55);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: width .2s, background .2s;
+}
+.hero-carousel-dot.is-active {
+  background: white;
+  width: 1.4rem;
+}
+
+/* ============================================================
+   Mobile responsive overrides (≤640px)
+   Keeps shared components readable and proportioned on phones.
+   NOTE: This runs on top of the html { font-size } scaling above,
+   so most rem-based sizes already shrink automatically — these
+   rules just trim a few spots where uniform scaling isn't enough.
+   ============================================================ */
+@media (max-width: 640px) {
+  /* Tighter page gutters */
+  .container { padding-inline: .875rem; }
+
+  /* Cards: less generous padding so content isn't crushed */
+  .card { padding: 1.125rem; border-radius: .625rem; }
+
+  /* Buttons: keep tap target but a touch tighter horizontally */
+  .btn { padding: .55rem .9rem; font-size: .8125rem; }
+
+  /* Dashboard stat cards */
+  .stat-card { padding: 1rem; }
+  .stat-num { font-size: 1.5rem; }
+  .stat-label { font-size: .75rem; }
+
+  /* Section eyebrow stays at .75rem — fine on mobile */
+
+  /* Feature cards (Services, Knowledge Hub on Home) */
+  .feature-card { padding: 1.25rem !important; }
+  .feature-card h3 { font-size: 1.0625rem !important; line-height: 1.3; }
+  .feature-card .icon-tile { width: 2.4rem; height: 2.4rem; }
+
+  /* Committee category cards */
+  .cat-card {
+    min-height: 9.25rem;
+    padding: 1.05rem 1rem .95rem;
+    gap: .35rem;
+  }
+  .cat-card-title { font-size: 1rem; }
+  .cat-card-next { font-size: .75rem; }
+  .cat-card-cta { font-size: .8125rem; }
+
+  /* Event accordion */
+  .event-acc-head { padding: .85rem 1rem; gap: .65rem; }
+  .event-acc-title { font-size: .9375rem; line-height: 1.3; }
+  .event-acc-committee { font-size: .75rem; }
+  .event-acc-date { font-size: .8125rem; }
+  .event-acc-right { gap: .55rem; }
+  .event-acc-chevron { width: 1.65rem; height: 1.65rem; }
+  .event-acc-meta { margin: 0 1rem; font-size: .75rem; gap: .45rem 1rem; }
+  .event-acc-cta { margin: 0 1rem 1rem; font-size: .75rem; }
+  .event-acc-detail { padding: 1rem; gap: 1rem; }
+  .event-acc-highlights li { font-size: .8125rem; line-height: 1.45; }
+  .event-acc-footer { gap: .75rem; margin-top: .85rem; padding-top: .85rem; }
+  .event-acc-speaker img { width: 2.25rem; height: 2.25rem; }
+  .event-acc-speaker-name { font-size: .8125rem; }
+
+  /* Committee panel (detail page header) */
+
+  /* Hero carousel — caption + arrows scale down */
+  .hero-carousel-caption {
+    left: .65rem;
+    bottom: 2rem;
+    padding: .3rem .55rem;
+    font-size: .75rem;
+  }
+  .hero-carousel-arrow {
+    width: 1.85rem;
+    height: 1.85rem;
+  }
+  .hero-carousel-arrow-prev { left: .5rem; }
+  .hero-carousel-arrow-next { right: .5rem; }
+
+  /* Wicasa student-wing card */
+  .wicasa-subhead { margin-top: 1.1rem; margin-bottom: .65rem; font-size: .6875rem; }
+  .wicasa-updates li { font-size: .8125rem; }
+  .wicasa-suggestions li { padding: .55rem .55rem .55rem .75rem; gap: .55rem; }
+  .wicasa-sugg-text { font-size: .75rem; }
+  .wicasa-upvote-pill { padding: .3rem .6rem .3rem .5rem; font-size: .75rem; }
+  .wicasa-resources { margin-top: 1.1rem; font-size: .75rem; }
+
+  /* Room booking page */
+  .room-card { padding: .9rem; }
+  .room-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .65rem; }
+  .slot-grid { grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: .55rem; }
+  .slot-chip { padding: .65rem .75rem; font-size: .8125rem; }
+  .date-chip { min-width: 3.5rem; padding: .5rem .4rem; }
+  .booking-summary { position: static; }
+
+  /* Auth — narrower gutters and fluid card on phones so the form isn't
+   * hemmed in against tiny viewport widths. */
+  .auth-form-wrap { padding: 1.25rem .9rem; min-height: auto; align-items: stretch; }
+  .auth-card { max-width: 100%; margin: 0 auto; }
+  .auth-tabs { margin-bottom: 1.1rem; }
+  .auth-side { padding: 1.5rem; }
+
+  /* OTP cells a bit smaller on narrow screens */
+  .otp-grid { gap: .35rem; }
+  .otp-cell { font-size: 1.05rem; padding: .6rem 0; }
+
+  /* Toasts hug the screen edge less aggressively */
+  .toast { right: .75rem; bottom: .75rem; left: .75rem; }
+
+  /* Avatar dropdown menu fits narrow viewports */
+  .avatar-menu { width: 13rem; }
+
+  /* Icon tiles */
+  .icon-tile { width: 2.4rem; height: 2.4rem; }
+
+  /* Generic safety nets so anything not explicitly tuned still
+     stays inside the viewport on phones. */
+  h1 { font-size: clamp(1.25rem, 6vw, 1.75rem); line-height: 1.2; word-wrap: break-word; }
+  h2 { font-size: clamp(1.125rem, 5.2vw, 1.5rem); line-height: 1.25; word-wrap: break-word; }
+  h3 { font-size: clamp(1rem, 4.4vw, 1.25rem); line-height: 1.3; word-wrap: break-word; }
+  p, li, label, input, select, textarea { word-wrap: break-word; }
+
+  /* Tables should scroll horizontally rather than overflow the page */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { max-width: 100%; }
+}
+
+/* Slightly larger phones / small tablets — only soften the most painful items */
+@media (min-width: 641px) and (max-width: 768px) {
+  .container { padding-inline: 1rem; }
+  .feature-card { padding: 1.5rem !important; }
+  .stat-num { font-size: 1.65rem; }
+  .event-acc-title { font-size: .9375rem; }
+}
+
+/* Very narrow phones (≤380px): one more notch of breathing room */
+@media (max-width: 380px) {
+  .container { padding-inline: .75rem; }
+  .btn { padding: .5rem .8rem; font-size: .8125rem; }
+  .cat-card { padding: 1rem .9rem .9rem; }
+  .feature-card { padding: 1.1rem !important; }
+  .event-acc-head { padding: .8rem .9rem; }
+  .event-acc-meta { margin: 0 .9rem; }
+  .event-acc-cta { margin: 0 .9rem .9rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE EXPERIENCE — bottom nav, safe-areas, input zoom prevention,
+   minimum touch targets. Applies only below 768px so desktop is unaffected.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Reserved height for the bottom nav. Reads safe-area-inset-bottom so
+     iPhones with a home indicator don't paint the strip over it. */
+  --bottom-nav-h: calc(4rem + env(safe-area-inset-bottom, 0px));
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Prevent iOS Safari from auto-zooming when a form field gets focus.
+   Trigger threshold is 16 px; anything smaller forces the zoom. The
+   site-wide font scale shrinks below 1rem on small screens (see line 38)
+   so we bump the inputs explicitly. */
+@media (max-width: 768px) {
+  .input-base,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="url"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Minimum tappable area — Apple HIG asks for ≥44 px, Material ≥48 dp.
+   Buttons & links inside `.btn` already meet this on default size, but
+   small variants (padding .25rem .55rem) used by table actions don't.
+   Bump them so a thumb can hit them on a phone without misfiring. */
+@media (max-width: 768px) {
+  .btn, button.btn-ghost, [role="button"] {
+    min-height: 44px;
+  }
+}
+
+/* ── Bottom navigation strip ──────────────────────────────────────────── */
+.bottom-nav {
+  display: none;          /* shown on mobile only — see media query below */
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 60;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  /* The bar itself sits above the home indicator; the inset is added as
+     padding so the icons stay clear of it. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 -4px 16px -8px oklch(0.18 0.05 250 / 0.15);
+}
+.bottom-nav-tab {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .2rem;
+  padding: .55rem .25rem .65rem;
+  min-height: 56px;
+  background: transparent;
+  border: 0;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  cursor: pointer;
+  font-size: .65rem;
+  font-weight: 500;
+  line-height: 1;
+  transition: color .15s ease;
+}
+.bottom-nav-tab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.bottom-nav-tab.is-active {
+  color: var(--primary);
+  font-weight: 600;
+}
+.bottom-nav-icon {
+  display: inline-flex;
+  width: 1.4rem;
+  height: 1.4rem;
+}
+.bottom-nav-label {
+  letter-spacing: .01em;
+}
+
+/* ── Slide-up "More" sheet ────────────────────────────────────────────── */
+.bottom-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: oklch(0.18 0.05 250 / 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn .18s ease;
+}
+.bottom-sheet {
+  background: var(--card);
+  width: 100%;
+  max-height: 85vh;
+  border-radius: 1rem 1rem 0 0;
+  padding: .5rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  animation: slideUp .22s cubic-bezier(.2,.7,.2,1);
+  box-shadow: 0 -20px 40px -10px oklch(0.18 0.05 250 / 0.3);
+}
+.bottom-sheet-handle {
+  width: 38px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 999px;
+  margin: .25rem auto .75rem;
+}
+.bottom-sheet-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 .75rem;
+  color: var(--foreground);
+}
+.bottom-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: .5rem;
+  margin-bottom: 1rem;
+}
+.bottom-sheet-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+  padding: .85rem .5rem;
+  border: 1px solid var(--border);
+  border-radius: .625rem;
+  background: var(--background);
+  color: var(--foreground);
+  text-decoration: none;
+  transition: border-color .15s, transform .1s;
+  min-height: 88px;
+  justify-content: center;
+  text-align: center;
+}
+.bottom-sheet-item:active { transform: scale(.97); }
+.bottom-sheet-item:hover  { border-color: oklch(0.36 0.13 255 / 0.45); }
+.bottom-sheet-item-icon {
+  display: inline-flex;
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--primary);
+}
+.bottom-sheet-item-label {
+  font-size: .7rem;
+  line-height: 1.25;
+  font-weight: 500;
+}
+.bottom-sheet-footer {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Reveal the bottom nav only on mobile widths. Above 768 px the desktop
+   header is enough — no point eating vertical real estate. */
+@media (max-width: 768px) {
+  .bottom-nav {
+    display: flex;
+    align-items: stretch;
+  }
+  /* Push the page body up so its content isn't hidden behind the bar. */
+  body {
+    padding-bottom: var(--bottom-nav-h);
+  }
+}
+
+/* Respect reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .bottom-sheet, .bottom-sheet-backdrop { animation: none; }
+}
+
+/* ── Members Directory — desktop table / mobile card switch ─────────── */
+.dir-mobile-list {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dir-desktop-table { display: block; }
+@media (max-width: 640px) {
+  .dir-mobile-list   { display: flex; flex-direction: column; gap: .5rem; }
+  .dir-desktop-table { display: none; }
+}
+.dir-mobile-card {
+  display: flex;
+  gap: .75rem;
+  padding: .75rem .85rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .625rem;
+}
+.dir-mobile-avatar {
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: oklch(0.36 0.13 255 / 0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .7rem;
+  font-weight: 700;
+}
+.dir-mobile-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+.dir-mobile-name {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--foreground);
+  line-height: 1.3;
+}
+.dir-mobile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  font-size: .7rem;
+  color: var(--muted-foreground);
+}
+.dir-mobile-mrn {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: .7rem;
+}
+.dir-mobile-city {
+  font-size: .7rem;
+}
+.dir-mobile-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: .15rem;
+}
+.dir-mobile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 500;
+  background: oklch(0.36 0.13 255 / 0.08);
+  color: var(--primary);
+  text-decoration: none;
+  border: 1px solid oklch(0.36 0.13 255 / 0.18);
+}
+.dir-mobile-chip:active { transform: scale(.97); }
+.dir-mobile-firm {
+  display: inline-block;
+  font-size: .7rem;
+  color: var(--muted-foreground);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dir-mobile-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: .875rem;
+}
+/* Quick shimmer keyframe (reuses our existing palette) */
+.shimmer {
+  background: linear-gradient(90deg, var(--muted) 0%, oklch(0.94 0.005 240) 50%, var(--muted) 100%);
+  background-size: 200% 100%;
+  animation: shimmerMove 1.4s linear infinite;
+}
+@keyframes shimmerMove {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.dir-mobile-avatar.shimmer {
+  background: linear-gradient(90deg, var(--muted) 0%, oklch(0.94 0.005 240) 50%, var(--muted) 100%);
+  background-size: 200% 100%;
+  animation: shimmerMove 1.4s linear infinite;
+}
+
+/* ── PWA standalone mode polish ─────────────────────────────────────── */
+/* When installed as a PWA the user has no browser back-button or address
+   bar, so the bottom-nav becomes the primary navigation. Strengthen its
+   shadow + reserve top safe area for the iPhone notch. */
+html[data-standalone="true"] .bottom-nav {
+  box-shadow: 0 -8px 24px -10px oklch(0.18 0.05 250 / 0.25);
+}
+html[data-standalone="true"] body {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ── Home hero — viewport-relative height tuned per breakpoint ─────── */
+.home-hero-section { min-height: calc(100vh - var(--header-h, 104px)); }
+@media (max-width: 768px) {
+  /* Let the hero size to its content plus its own clamp() padding instead
+   * of forcing a tall viewport-fraction. The old 70vh / 62vh caps made
+   * mobile feel stretched — a big empty band sat between the CTAs and
+   * the next section because content is short and align-items: center
+   * centred it in the tall block. */
+  .home-hero-section { min-height: 0; }
+}
+
+/* ── Home content sections — tighter vertical padding on phones ──────
+ * Every section on HomePage.jsx uses
+ *   padding: clamp(3rem, 8vw, 7rem) 1rem
+ * inline, which resolves to 3rem (48px) top+bottom on phones. Stacked
+ * across 5–6 sections that's ~600px of pure whitespace and is the main
+ * reason mobile feels "elongated". Shave the mobile floor to 1.75rem
+ * so sections still breathe but the page doesn't scroll forever. */
+@media (max-width: 640px) {
+  .home-page .home-hero-section { padding-block: 1.75rem !important; }
+  /* Home sections stack directly under .home-page; their inline
+   * clamp(3rem, 8vw, 7rem) block padding gets replaced with 1.75rem
+   * so we don't burn ~600px on whitespace across 5–6 stacked sections. */
+  .home-page > section,
+  .home-page > section > .container {
+    padding-block: 1.75rem !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PREMIUM MOBILE — "feels like a React Native app" pass.
+   Active-indicator pill, page slide transitions, press feedback on every
+   tappable surface, mobile-only app bar, FAB lifted above bottom-nav,
+   thin scrollbars, no nasty tap-highlight rectangles.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Mobile-only top app bar ───────────────────────────────────────────
+   Hides on desktop; the desktop Header takes over via .hide-on-mobile-only. */
+.mobile-appbar { display: none; }
+.hide-on-mobile-only { display: block; }
+
+@media (max-width: 768px) {
+  /* The desktop header is hidden on phones — its two-bar layout wastes
+     vertical real estate and the social links don't matter to a thumb. */
+  .hide-on-mobile-only { display: none !important; }
+
+  .mobile-appbar {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    position: sticky;
+    top: 0;
+    z-index: 55;
+    padding: .65rem 1rem;
+    padding-top: calc(.65rem + env(safe-area-inset-top, 0px));
+    background: var(--primary);
+    color: var(--primary-foreground);
+    min-height: calc(56px + env(safe-area-inset-top, 0px));
+    transition: box-shadow .2s ease, background .2s ease;
+  }
+  .mobile-appbar.is-scrolled {
+    box-shadow: 0 4px 16px -8px oklch(0.18 0.05 250 / 0.35);
+  }
+}
+
+.mobile-appbar-brand {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+.mobile-appbar-logo {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: .5rem;
+  background: #fff;
+  padding: .2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mobile-appbar-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.mobile-appbar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mobile-appbar-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.mobile-appbar-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,.18);
+  color: white;
+  font-size: .75rem;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: .04em;
+  backdrop-filter: blur(8px);
+}
+.mobile-appbar-signin {
+  padding: .35rem .85rem;
+  background: rgba(255,255,255,.18);
+  border-radius: 999px;
+  color: white;
+  font-size: .8rem;
+  font-weight: 600;
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+}
+
+/* ── Bottom-nav animated indicator pill ───────────────────────────────
+   Sits at the top of the active tab; slides smoothly when the user
+   navigates. The slot left/width is driven by inline style in the JSX. */
+.bottom-nav { position: fixed; }            /* (already set above) — ensure stacking ctx for indicator */
+.bottom-nav-indicator {
+  position: absolute;
+  top: 0;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 0 0 999px 999px;
+  transition: left .28s cubic-bezier(.2,.7,.2,1), width .28s cubic-bezier(.2,.7,.2,1);
+  pointer-events: none;
+}
+
+/* Active tab icon gently scales up — feels like a Material indicator. */
+.bottom-nav-tab .bottom-nav-icon { transition: transform .22s cubic-bezier(.2,.7,.2,1); }
+.bottom-nav-tab.is-active .bottom-nav-icon { transform: translateY(-1px) scale(1.08); }
+
+/* ── Press feedback (haptic-style scale-down) ──────────────────────────
+   The single biggest "feels native" trick. Anything tappable shrinks
+   slightly when held down. Only triggers on touch devices so desktop
+   click feedback stays calm. */
+@media (hover: none) {
+  .btn:active,
+  .bottom-nav-tab:active,
+  .bottom-sheet-item:active,
+  .mobile-appbar-avatar:active,
+  .mobile-appbar-signin:active,
+  .dir-mobile-card:active,
+  .dir-mobile-chip:active,
+  a[href]:active,
+  [role="button"]:active {
+    transform: scale(.97);
+  }
+  .btn, .bottom-nav-tab, .bottom-sheet-item, .mobile-appbar-avatar,
+  .mobile-appbar-signin, .dir-mobile-card, .dir-mobile-chip,
+  [role="button"] {
+    transition: transform .12s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  /* Suppress the grey iOS tap highlight rectangle — we render our own. */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* ── Page slide-in transition ─────────────────────────────────────────
+   Re-mounted div under `<main>` gets this animation on every route
+   change — uses key={route.path} in AppShell. Subtle horizontal slide
+   + opacity ramp, ~220 ms — same feel as the native "push" transition
+   on iOS. */
+.page-enter {
+  animation: pageEnter .22s cubic-bezier(.2,.7,.2,1);
+}
+@keyframes pageEnter {
+  from { opacity: 0; transform: translate3d(12px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter { animation: none; }
+}
+
+/* ── Pragyaan FAB — lift above bottom nav, animate the Garud logo ────
+   The original Garud bird artwork is kept as-is (no invert filter, no
+   solid pill background). Animation: a slow, breathing hover + a
+   gentle wing-tilt sway so it reads as a living mascot rather than a
+   static sticker. Animations disabled for reduced-motion users. */
+@media (max-width: 768px) {
+  #icai-pragyaan-fab {
+    bottom: calc(.75rem + var(--bottom-nav-h)) !important;
+    right: .5rem !important;
+    width: 4rem !important;
+    height: 4rem !important;
+  }
+}
+/* Pragyaan Garud — keep the original artwork still, just a soft drop-
+   shadow so it reads as floating above the page. No flap, no drift. */
+#icai-pragyaan-fab img {
+  filter: drop-shadow(0 6px 10px oklch(0.18 0.05 250 / 0.25));
+  transition: filter .25s ease;
+}
+#icai-pragyaan-fab:hover img,
+#icai-pragyaan-fab:focus-visible img {
+  filter: drop-shadow(0 10px 14px oklch(0.36 0.13 255 / 0.45));
+}
+
+/* ── Pragyaan greeting bubble ─────────────────────────────────────────
+   Speech-bubble that appears next to the FAB ~1.5 s after the page
+   loads, introducing the assistant. Auto-fades after 10 s. Dismissable
+   via the × button. Hidden once the chat is opened or once the user
+   has dismissed it (state owned by the React component — CSS just
+   styles it). */
+.pg-greet {
+  position: fixed;
+  /* Above the FAB (z 201) and any cookie banner. */
+  z-index: 220;
+  right: calc(1.5rem + 5.5rem + .75rem);   /* sit left of the FAB */
+  bottom: 2.4rem;
+  max-width: 17rem;
+  padding: .75rem .9rem .8rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .9rem;
+  box-shadow:
+    0 4px 10px oklch(0.18 0.05 250 / 0.12),
+    0 18px 40px -14px oklch(0.18 0.05 250 / 0.28);
+  font-size: .875rem;
+  line-height: 1.45;
+  color: var(--foreground);
+  animation: pgGreetIn .35s cubic-bezier(.2, .7, .2, 1) both;
+  transform-origin: bottom right;
+}
+.pg-greet-row {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+}
+.pg-greet-text { flex: 1 1 auto; min-width: 0; }
+.pg-greet-name {
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -.005em;
+}
+.pg-greet-close {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .25rem;
+  cursor: pointer;
+  font-size: .9rem;
+  line-height: 1;
+}
+.pg-greet-close:hover { background: var(--muted); color: var(--foreground); }
+/* Speech bubble tail pointing right toward the FAB. Two triangles
+   stacked — one for the border, one for the fill — so the outline
+   reads cleanly along the diagonal edge. */
+.pg-greet::before,
+.pg-greet::after {
+  content: '';
+  position: absolute;
+  right: -8px;
+  bottom: 14px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 0 8px 8px;
+  border-color: transparent transparent transparent var(--card);
+}
+.pg-greet::before {
+  right: -9px;
+  border-color: transparent transparent transparent var(--border);
+}
+.pg-greet.pg-greet-leaving {
+  animation: pgGreetOut .25s ease both;
+}
+@keyframes pgGreetIn {
+  from { opacity: 0; transform: translateY(6px) scale(.94); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+@keyframes pgGreetOut {
+  from { opacity: 1; transform: translateY(0)   scale(1); }
+  to   { opacity: 0; transform: translateY(4px) scale(.96); }
+}
+@media (max-width: 768px) {
+  .pg-greet {
+    /* On mobile the FAB lives `bottom: .75rem + bottom-nav-h` and is
+       4rem tall on the right. Stack the bubble well above the bird
+       (with extra gap so it's clearly visible, not crammed against
+       the FAB's drop-shadow). */
+    right: .75rem;
+    bottom: calc(.75rem + var(--bottom-nav-h) + 4.75rem);
+    left: .75rem;                   /* span full width on phones */
+    max-width: none;
+    width: auto;
+    transform-origin: bottom right;
+  }
+  /* Move the tail to the BOTTOM of the bubble, pointing down at the bird. */
+  .pg-greet::before,
+  .pg-greet::after {
+    right: 1.5rem;
+    left: auto;
+    bottom: -8px;
+    border-width: 8px 8px 0 8px;
+    border-color: var(--card) transparent transparent transparent;
+  }
+  .pg-greet::before {
+    bottom: -9px;
+    border-color: var(--border) transparent transparent transparent;
+  }
+}
+
+/* ── Card press feedback + elevation ──────────────────────────────────
+   On phones, `.card` gets a subtle layered shadow (close + far) so it
+   reads as a real elevated surface rather than a bordered box. */
+@media (max-width: 768px) {
+  .card {
+    border-radius: 1rem;
+    box-shadow:
+      0 1px 3px oklch(0.18 0.05 250 / 0.06),
+      0 4px 12px -4px oklch(0.18 0.05 250 / 0.08);
+  }
+  /* Clickable cards (anchor tags + role=button + cards inside lists)
+     get a slightly stronger lift on hover/active. */
+  a.card:hover,
+  button.card:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 2px 6px oklch(0.18 0.05 250 / 0.10),
+      0 12px 28px -10px oklch(0.18 0.05 250 / 0.18);
+  }
+}
+
+/* ── Premium polish: thin scrollbars, no focus rings on touch ─────── */
+@media (max-width: 768px) {
+  /* Thin, subtle scrollbars — like iOS Safari */
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: oklch(0.65 0.04 250 / 0.4);
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  /* Default focus ring removed for touch users (browser still shows it
+     for keyboard users via :focus-visible elsewhere). */
+  *:focus { outline: none; }
+}
+
+/* ── Refined chairman section on mobile ───────────────────────────────
+   The full-bleed photo plus floating name ribbon looked great on
+   desktop but felt unrefined on a phone — too much real estate spent
+   on one image. Mobile version: tighter card, framed photo, the
+   quote and attribution sit in a paired card right below. */
+@media (max-width: 768px) {
+  [data-chair-grid] {
+    gap: 1.25rem !important;
+  }
+  [data-chair-grid] > img {
+    max-width: 240px !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 16px 32px -16px oklch(0.18 0.05 250 / 0.35) !important;
+  }
+}
+
+/* ── Home hero — ICAI accent colour by breakpoint ─────────────────────
+   Desktop wants primary-blue ICAI (matches official ICAI wordmark style);
+   mobile wants the warm amber accent so it pops on the lighter mobile
+   hero background. */
+.home-hero-icai { color: var(--primary); }
+@media (max-width: 768px) {
+  .home-hero-icai { color: var(--accent); }
+}
+
+/* ── Home hero background — mobile rewrite ────────────────────────────
+   On phones we drop the building photo entirely and let the heroLogo
+   itself BE the background — bigger, recentred, slightly more visible
+   than a typical watermark, sitting on a clean white wash. Less visual
+   noise, stronger brand presence. */
+@media (max-width: 768px) {
+  /* Building photo hidden — too noisy on a narrow viewport. */
+  .home-hero-photo { display: none !important; }
+
+  /* Overlay collapses to a clean near-white wash with a soft amber
+     corner accent so the section doesn't feel flat. */
+  .home-hero-overlay {
+    background:
+      radial-gradient(circle at 90% 10%, oklch(0.85 0.16 90 / 0.16) 0%, transparent 42%),
+      linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.94) 100%) !important;
+  }
+
+  /* The logo IS the background now — bigger, more visible, perfectly
+     centred so it reads as a watermark seal behind the content. */
+  .home-hero-watermark {
+    width: clamp(220px, 65vw, 380px) !important;
+    opacity: .18 !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    max-height: 70% !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Home page — coherent mobile pass
+   HomePage.jsx builds most of its sections with inline styles + clamp()
+   font sizes tuned for desktop. On phones the result feels "elongated":
+   over-large headings, three CTAs wrapping into a jagged row, chairperson
+   portrait eating half the viewport, and cards with desktop-scale
+   padding. This block establishes a single mobile scale that reads
+   cleanly across every section without touching the desktop layout.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* — Typography scale — one consistent step-down for the home page only.
+     Scoped to .home-page so other routes (events, contact, admin, etc.)
+     keep their own heading sizes. */
+  .home-page .home-hero-section h1 {
+    font-size: 1.875rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: -.015em !important;
+  }
+  .home-page section h2 {
+    font-size: 1.5rem !important;
+    line-height: 1.2 !important;
+    letter-spacing: -.01em !important;
+  }
+  .home-page section h3 {
+    font-size: 1.0625rem !important;
+    line-height: 1.3 !important;
+  }
+  /* Body copy under section headings — 15px reads better than 17px on a
+     narrow viewport, and matches the tightened heading scale. */
+  .home-page section p {
+    font-size: .9375rem;
+    line-height: 1.55;
+  }
+
+  /* — Hero CTAs — the 3 buttons ("Upcoming Events / Ask PrayGyaan / Create
+     account") wrapped into a ragged 2-then-1 stack. Column-stack them
+     full-width for a clean vertical group; primary stays visually first. */
+  .home-page .home-hero-section .row.gap-3 {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: .55rem !important;
+    width: 100%;
+  }
+  .home-page .home-hero-section .row.gap-3 .btn {
+    width: 100%;
+    justify-content: center;
+    padding: .75rem 1rem;
+  }
+
+  /* — Chairperson portrait — inline maxWidth is 320px which is ~85% of a
+     375px viewport. Cap to 200px so the quote sits closer to the photo. */
+  .home-page [data-chair-grid] > img {
+    max-width: 200px !important;
+  }
+
+  /* — Feature cards (Services + Knowledge Hub) — shrink one more notch
+     from the existing 1.25rem in the base mobile block. Also tighten
+     the internal type so cards feel like phone-native list items rather
+     than desktop tiles. */
+  .home-page .feature-card { padding: 1rem !important; }
+  .home-page .feature-card h3 {
+    margin-top: .85rem !important;
+    font-size: 1rem !important;
+  }
+  .home-page .feature-card p {
+    margin-top: .35rem !important;
+    font-size: .8375rem !important;
+    line-height: 1.5 !important;
+  }
+  .home-page .feature-card .feature-cta {
+    margin-top: .85rem !important;
+    font-size: .8125rem !important;
+  }
+}
+
+/* Hide the floating Google reCAPTCHA v3 badge. Google's ToS require the
+   attribution to be visible somewhere — the ContactPage renders a
+   "Protected by reCAPTCHA. Google Privacy & Terms apply." line below the
+   form which satisfies that requirement. */
+.grecaptcha-badge {
+  visibility: hidden !important;
+}
